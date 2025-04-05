@@ -11,6 +11,7 @@ An HTTP and WebSocket reverse proxy router written in Go.
 - Support for listening on multiple ports simultaneously
 - Graceful shutdown support
 - Colored terminal log output
+- Docker support with host network mode
 
 ## Configuration
 
@@ -44,6 +45,8 @@ router:
 
 ## Usage
 
+### Running Locally
+
 1. Install dependencies:
 
 ```bash
@@ -57,6 +60,54 @@ go run main.go
 ```
 
 The server will start and listen on all configured ports. All HTTP and WebSocket requests matching the configured paths will be forwarded to their respective target ports.
+
+### Running with Docker
+
+This project includes Docker support with host network mode to ensure proper port forwarding functionality.
+
+1. Make sure you have Docker and docker-compose installed on your system
+2. Use the provided Makefile commands for easy container management:
+
+```bash
+# Start in background
+make up
+
+# Start in foreground (view logs)
+make up-fg
+
+# Stop the container
+make down
+
+# Rebuild and restart
+make reset
+
+# View logs
+make logs
+
+# Clean up resources
+make clean
+```
+
+For a complete list of available commands:
+
+```bash
+make help
+```
+
+## Makefile Commands
+
+The project includes a Makefile to simplify Docker operations:
+
+| Command      | Description                                      |
+| ------------ | ------------------------------------------------ |
+| `make up`    | Start containers (background)                    |
+| `make up-fg` | Start containers (foreground, view logs)         |
+| `make down`  | Stop containers                                  |
+| `make reset` | Rebuild and start containers                     |
+| `make build` | Build images only                                |
+| `make logs`  | View container logs                              |
+| `make clean` | Clean environment (remove containers and images) |
+| `make help`  | Display help information                         |
 
 ## Graceful Shutdown
 

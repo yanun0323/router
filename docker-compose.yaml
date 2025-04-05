@@ -1,0 +1,14 @@
+version: "3"
+
+services:
+  router:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: go-router
+    restart: unless-stopped
+    network_mode: "host" # 使用主機網絡
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro # 將配置文件掛載為只讀
+    # 由於使用主機網絡，無需映射端口
+    # 所有在主機上開放的端口都將直接被容器使用
