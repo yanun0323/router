@@ -178,9 +178,8 @@ func handleHTTP(w http.ResponseWriter, r *http.Request, routes []RedirectConfig)
 				return
 			}
 			proxy := httputil.NewSingleHostReverseProxy(targetURL)
-			r.URL.Path = strings.TrimPrefix(r.URL.Path, route.Path)
 			proxy.ServeHTTP(w, r)
-			log.Printf("Redirected request to %s", path)
+			log.Printf("Redirected request to %s%s", path, r.URL.Path)
 			return
 		}
 	}
@@ -191,7 +190,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request, routes []RedirectCo
 	for _, route := range routes {
 		if strings.HasPrefix(r.URL.Path, route.Path) {
 			// Establish WebSocket connection with target server
-			path := fmt.Sprintf("ws://localhost:%d", route.Port)
+			path := fmt.Sprintf("ws://localhost:%d%s", route.Port, r.URL.Path)
 			targetURL, err := url.Parse(path)
 			if err != nil {
 				log.Printf("Failed to parse target URL: %v", err)
