@@ -1,0 +1,17 @@
+router:
+  - server: 8080 # server port
+    redirect:
+        - path: "/server_a"
+          port: 1234
+        - path: "/server_b"
+          port: 5678
+        - path: "/server_c"
+          port: 9012
+  - server: 8081 # server port
+    redirect:
+        - path: "/server_a"
+          port: 1235
+        - path: "/server_b"
+          port: 5679
+        - path: "/server_c"
+          port: 9013
