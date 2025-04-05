@@ -180,6 +180,7 @@ func handleHTTP(w http.ResponseWriter, r *http.Request, routes []RedirectConfig)
 			proxy := httputil.NewSingleHostReverseProxy(targetURL)
 			r.URL.Path = strings.TrimPrefix(r.URL.Path, route.Path)
 			proxy.ServeHTTP(w, r)
+			log.Printf("Redirected request to %s", path)
 			return
 		}
 	}
