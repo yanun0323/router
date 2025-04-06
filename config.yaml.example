@@ -10,6 +10,9 @@ router:
         - path: "/server_c"
           # 當 host 為空時，將使用 localhost
           port: 9012
+        - path: "/server_ip"
+          host: "192.168.1.100"  # 使用 IP 地址
+          port: 9090
   - server: 8081 # server port
     redirect:
         - path: "/server_a"
@@ -21,3 +24,6 @@ router:
         - path: "/server_c"
           # 當 host 為空時，將使用 localhost
           port: 9013
+        - path: "/server_ip" 
+          host: "10.0.0.50"  # 使用 IP 地址
+          port: 8888

@@ -46,6 +46,8 @@ router:
   - `redirect`: List of forwarding rules
     - `path`: URL path prefix to match
     - `host`: Target host to forward to (defaults to "localhost" if not specified)
+      - Can be a domain name (e.g., "api.example.com")
+      - Can be an IP address (e.g., "192.168.1.100")
     - `port`: Target port to forward to
 
 ## Usage
@@ -136,6 +138,9 @@ router:
       - path: "/ws"
         host: "ws.example.com"
         port: 9001
+      - path: "/ip-service"
+        host: "192.168.1.100"
+        port: 8888
   - server: 8081
     redirect:
       - path: "/api"
@@ -144,6 +149,7 @@ router:
 
 - HTTP requests to `http://localhost:8080/api/*` will be forwarded to `http://api.example.com:9000/*`
 - WebSocket connections to `ws://localhost:8080/ws/*` will be forwarded to `ws://ws.example.com:9001/*`
+- HTTP requests to `http://localhost:8080/ip-service/*` will be forwarded to `http://192.168.1.100:8888/*` (using IP address)
 - HTTP requests to `http://localhost:8081/api/*` will be forwarded to `http://localhost:9002/*` (no host specified, using default "localhost")
 
 ## Dependencies

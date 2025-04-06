@@ -115,7 +115,7 @@ func main() {
 				ColorGreen, serverCfg.Server, ColorReset))
 			for _, route := range serverCfg.Redirect {
 				host := route.Host
-				if len(host) == 0 {
+				if host == "" {
 					host = "localhost"
 				}
 				writer.WriteString(fmt.Sprintf("\n\t%s%s%s -> %s%s:%d%s",
@@ -179,8 +179,9 @@ func handleHTTP(w http.ResponseWriter, r *http.Request, routes []RedirectConfig)
 			if len(host) == 0 {
 				host = "localhost"
 			}
-			path := fmt.Sprintf("http://%s:%d", host, route.Port)
-			targetURL, err := url.Parse(path)
+
+			// 構建 URL
+			targetURL, err := url.Parse(fmt.Sprintf("http://%s:%d", host, route.Port))
 			if err != nil {
 				log.Printf("Failed to parse target URL: %v", err)
 				http.Error(w, "Failed to parse target URL", http.StatusInternalServerError)
@@ -202,14 +203,10 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request, routes []RedirectCo
 			if len(host) == 0 {
 				host = "localhost"
 			}
-			path := fmt.Sprintf("ws://%s:%d%s", host, route.Port, r.URL.Path)
-			targetURL, err := url.Parse(path)
-			if err != nil {
-				log.Printf("Failed to parse target URL: %v", err)
-				http.Error(w, "Failed to parse target URL", http.StatusInternalServerError)
-				return
-			}
-			targetConn, _, err := websocket.DefaultDialer.Dial(targetURL.String(), nil)
+
+			// 構建 WebSocket URL
+			wsURL := fmt.Sprintf("ws://%s:%d%s", host, route.Port, r.URL.Path)
+			targetConn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
 			if err != nil {
 				log.Printf("Failed to connect to target server: %v", err)
 				http.Error(w, "Failed to connect to target server", http.StatusInternalServerError)
