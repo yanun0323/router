@@ -33,6 +33,7 @@ const (
 
 type RedirectConfig struct {
 	Path string `mapstructure:"path"`
+	Host string `mapstructure:"host"`
 	Port int    `mapstructure:"port"`
 }
 
@@ -113,9 +114,13 @@ func main() {
 			writer.WriteString(fmt.Sprintf("Server starting on port %s%d%s with the following routes:",
 				ColorGreen, serverCfg.Server, ColorReset))
 			for _, route := range serverCfg.Redirect {
-				writer.WriteString(fmt.Sprintf("\n\t%s%s%s -> %s%d%s",
+				host := route.Host
+				if len(host) == 0 {
+					host = "localhost"
+				}
+				writer.WriteString(fmt.Sprintf("\n\t%s%s%s -> %s%s:%d%s",
 					ColorCyan, route.Path, ColorReset,
-					ColorYellow, route.Port, ColorReset))
+					ColorYellow, host, route.Port, ColorReset))
 			}
 			log.Print(writer.String())
 
@@ -170,7 +175,11 @@ func main() {
 func handleHTTP(w http.ResponseWriter, r *http.Request, routes []RedirectConfig) {
 	for _, route := range routes {
 		if strings.HasPrefix(r.URL.Path, route.Path) {
-			path := fmt.Sprintf("http://localhost:%d", route.Port)
+			host := route.Host
+			if len(host) == 0 {
+				host = "localhost"
+			}
+			path := fmt.Sprintf("http://%s:%d", host, route.Port)
 			targetURL, err := url.Parse(path)
 			if err != nil {
 				log.Printf("Failed to parse target URL: %v", err)
@@ -189,7 +198,11 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request, routes []RedirectCo
 	for _, route := range routes {
 		if strings.HasPrefix(r.URL.Path, route.Path) {
 			// Establish WebSocket connection with target server
-			path := fmt.Sprintf("ws://localhost:%d%s", route.Port, r.URL.Path)
+			host := route.Host
+			if len(host) == 0 {
+				host = "localhost"
+			}
+			path := fmt.Sprintf("ws://%s:%d%s", host, route.Port, r.URL.Path)
 			targetURL, err := url.Parse(path)
 			if err != nil {
 				log.Printf("Failed to parse target URL: %v", err)

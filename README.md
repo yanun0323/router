@@ -22,16 +22,20 @@ router:
   - server: 8080 # First server listening port
     redirect:
       - path: "/server_a"
+        host: "localhost"
         port: 1234
       - path: "/server_b"
+        host: "api.example.com"
         port: 5678
       - path: "/server_c"
         port: 9012
   - server: 8081 # Second server listening port
     redirect:
       - path: "/server_a"
+        host: "localhost"
         port: 1235
       - path: "/server_b"
+        host: "api.example.com"
         port: 5679
       - path: "/server_c"
         port: 9013
@@ -41,6 +45,7 @@ router:
   - `server`: Port to listen on
   - `redirect`: List of forwarding rules
     - `path`: URL path prefix to match
+    - `host`: Target host to forward to (defaults to "localhost" if not specified)
     - `port`: Target port to forward to
 
 ## Usage
@@ -126,8 +131,10 @@ router:
   - server: 8080
     redirect:
       - path: "/api"
+        host: "api.example.com"
         port: 9000
       - path: "/ws"
+        host: "ws.example.com"
         port: 9001
   - server: 8081
     redirect:
@@ -135,9 +142,9 @@ router:
         port: 9002
 ```
 
-- HTTP requests to `http://localhost:8080/api/*` will be forwarded to `http://localhost:9000/*`
-- WebSocket connections to `ws://localhost:8080/ws/*` will be forwarded to `ws://localhost:9001/*`
-- HTTP requests to `http://localhost:8081/api/*` will be forwarded to `http://localhost:9002/*`
+- HTTP requests to `http://localhost:8080/api/*` will be forwarded to `http://api.example.com:9000/*`
+- WebSocket connections to `ws://localhost:8080/ws/*` will be forwarded to `ws://ws.example.com:9001/*`
+- HTTP requests to `http://localhost:8081/api/*` will be forwarded to `http://localhost:9002/*` (no host specified, using default "localhost")
 
 ## Dependencies
 

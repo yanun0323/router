@@ -2,16 +2,22 @@ router:
   - server: 8080 # server port
     redirect:
         - path: "/server_a"
+          host: "localhost"
           port: 1234
         - path: "/server_b"
+          host: "api.example.com"
           port: 5678
         - path: "/server_c"
+          # 當 host 為空時，將使用 localhost
           port: 9012
   - server: 8081 # server port
     redirect:
         - path: "/server_a"
+          host: "localhost"
           port: 1235
         - path: "/server_b"
+          host: "api.example.com"
           port: 5679
         - path: "/server_c"
+          # 當 host 為空時，將使用 localhost
           port: 9013
