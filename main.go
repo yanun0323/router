@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -12,8 +13,6 @@ import (
 	"sync"
 	"syscall"
 	"time"
-
-	"fmt"
 
 	"github.com/gorilla/websocket"
 	"github.com/spf13/viper"
@@ -111,25 +110,25 @@ func main() {
 
 			// Log server routes
 			writer := strings.Builder{}
-			writer.WriteString(fmt.Sprintf("Server starting on port %s%d%s with the following routes:",
-				ColorGreen, serverCfg.Server, ColorReset))
+			writer.WriteString(fmt.Sprintf("%sServer starting on port %s%d%s with the following routes:",
+				ColorGreen, ColorCyan, serverCfg.Server, ColorReset))
 			for _, route := range serverCfg.Redirect {
 				host := route.Host
-				if host == "" {
+				if len(host) == 0 {
 					host = "localhost"
 				}
 				writer.WriteString(fmt.Sprintf("\n\t%s%s%s -> %s%s:%d%s",
-					ColorCyan, route.Path, ColorReset,
-					ColorYellow, host, route.Port, ColorReset))
+					ColorYellow, route.Path, ColorReset,
+					ColorGreen, host, route.Port, ColorReset))
 			}
 			log.Print(writer.String())
 
 			// Start server
 			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				log.Fatalf("Failed to start server on port %d: %v", serverCfg.Server, err)
+				log.Fatalf("%sFailed to start server on port %d: %v%s", ColorRed, serverCfg.Server, err, ColorReset)
 			}
-			log.Printf("Server on port %s%d%s has been shutdown",
-				ColorGreen, serverCfg.Server, ColorReset)
+			log.Printf("%sServer on port %d has been shutdown%s",
+				ColorYellow, serverCfg.Server, ColorReset)
 		}(serverConfig)
 	}
 
@@ -173,6 +172,8 @@ func main() {
 }
 
 func handleHTTP(w http.ResponseWriter, r *http.Request, routes []RedirectConfig) {
+	log.Printf("%sReceived request: %s%s", ColorYellow, r.URL.Path, ColorReset)
+
 	for _, route := range routes {
 		if strings.HasPrefix(r.URL.Path, route.Path) {
 			host := route.Host
@@ -180,22 +181,58 @@ func handleHTTP(w http.ResponseWriter, r *http.Request, routes []RedirectConfig)
 				host = "localhost"
 			}
 
-			// 構建 URL
+			// Log routing match
+			log.Printf("%sMatched route: %s -> %s:%d%s", ColorGreen, route.Path, host, route.Port, ColorReset)
+
+			// Build URL
 			targetURL, err := url.Parse(fmt.Sprintf("http://%s:%d", host, route.Port))
 			if err != nil {
-				log.Printf("Failed to parse target URL: %v", err)
+				log.Printf("%sFailed to parse target URL: %v%s", ColorRed, err, ColorReset)
 				http.Error(w, "Failed to parse target URL", http.StatusInternalServerError)
 				return
 			}
+
+			// Create and configure reverse proxy
 			proxy := httputil.NewSingleHostReverseProxy(targetURL)
+
+			// Modify default Director function
+			originalDirector := proxy.Director
+			proxy.Director = func(req *http.Request) {
+				originalDirector(req)
+
+				// Preserve original request path
+				req.URL.Path = r.URL.Path
+				if r.URL.RawQuery != "" {
+					req.URL.RawQuery = r.URL.RawQuery
+				}
+
+				// Set X-Forwarded headers
+				req.Header.Set("X-Forwarded-Host", req.Host)
+				req.Header.Set("X-Forwarded-Proto", "http")
+				req.Header.Set("X-Forwarded-For", r.RemoteAddr)
+
+				// Log complete forwarding URL
+				log.Printf("%sForwarding request to: %s%s", ColorCyan, req.URL.String(), ColorReset)
+			}
+
+			// Add error handling
+			proxy.ErrorHandler = func(rw http.ResponseWriter, req *http.Request, err error) {
+				log.Printf("%sProxy error: %v%s", ColorRed, err, ColorReset)
+				http.Error(rw, fmt.Sprintf("Proxy error: %v", err), http.StatusBadGateway)
+			}
+
 			proxy.ServeHTTP(w, r)
 			return
 		}
 	}
+
+	log.Printf("%sNo matching route found: %s%s", ColorRed, r.URL.Path, ColorReset)
 	http.NotFound(w, r)
 }
 
 func handleWebSocket(w http.ResponseWriter, r *http.Request, routes []RedirectConfig) {
+	log.Printf("%sReceived WebSocket request: %s%s", ColorYellow, r.URL.Path, ColorReset)
+
 	for _, route := range routes {
 		if strings.HasPrefix(r.URL.Path, route.Path) {
 			// Establish WebSocket connection with target server
@@ -204,33 +241,42 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request, routes []RedirectCo
 				host = "localhost"
 			}
 
-			// 構建 WebSocket URL
+			// Log routing target
+			log.Printf("%sMatched WebSocket route: %s -> %s:%d%s", ColorGreen, route.Path, host, route.Port, ColorReset)
+
+			// Build WebSocket URL
 			wsURL := fmt.Sprintf("ws://%s:%d%s", host, route.Port, r.URL.Path)
+			log.Printf("%sAttempting WebSocket connection: %s%s", ColorCyan, wsURL, ColorReset)
+
 			targetConn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
 			if err != nil {
-				log.Printf("Failed to connect to target server: %v", err)
+				log.Printf("%sWebSocket server connection failed: %v%s", ColorRed, err, ColorReset)
 				http.Error(w, "Failed to connect to target server", http.StatusInternalServerError)
 				return
 			}
 			defer targetConn.Close()
+			log.Printf("%sWebSocket connection established successfully%s", ColorGreen, ColorReset)
 
 			// Upgrade client connection
 			clientConn, err := upgrader.Upgrade(w, r, nil)
 			if err != nil {
-				log.Printf("Failed to upgrade WebSocket connection: %v", err)
+				log.Printf("%sWebSocket upgrade failed: %v%s", ColorRed, err, ColorReset)
 				http.Error(w, "Failed to upgrade WebSocket connection", http.StatusInternalServerError)
 				return
 			}
 			defer clientConn.Close()
+			log.Printf("%sClient WebSocket upgrade successful%s", ColorGreen, ColorReset)
 
 			// Forward messages
 			go func() {
 				for {
 					messageType, message, err := clientConn.ReadMessage()
 					if err != nil {
+						log.Printf("%sRead from client failed: %v%s", ColorRed, err, ColorReset)
 						break
 					}
 					if err := targetConn.WriteMessage(messageType, message); err != nil {
+						log.Printf("%sWrite to server failed: %v%s", ColorRed, err, ColorReset)
 						break
 					}
 				}
@@ -239,14 +285,18 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request, routes []RedirectCo
 			for {
 				messageType, message, err := targetConn.ReadMessage()
 				if err != nil {
+					log.Printf("%sRead from server failed: %v%s", ColorRed, err, ColorReset)
 					break
 				}
 				if err := clientConn.WriteMessage(messageType, message); err != nil {
+					log.Printf("%sWrite to client failed: %v%s", ColorRed, err, ColorReset)
 					break
 				}
 			}
 			return
 		}
 	}
+
+	log.Printf("%sNo matching WebSocket route found: %s%s", ColorRed, r.URL.Path, ColorReset)
 	http.NotFound(w, r)
 }

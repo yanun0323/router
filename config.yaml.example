@@ -8,10 +8,10 @@ router:
           host: "api.example.com"
           port: 5678
         - path: "/server_c"
-          # 當 host 為空時，將使用 localhost
+          # If host is empty, localhost will be used
           port: 9012
         - path: "/server_ip"
-          host: "192.168.1.100"  # 使用 IP 地址
+          host: "192.168.1.100"  # Using IP address
           port: 9090
   - server: 8081 # server port
     redirect:
@@ -22,8 +22,8 @@ router:
           host: "api.example.com"
           port: 5679
         - path: "/server_c"
-          # 當 host 為空時，將使用 localhost
+          # If host is empty, localhost will be used
           port: 9013
         - path: "/server_ip" 
-          host: "10.0.0.50"  # 使用 IP 地址
+          host: "10.0.0.50"  # Using IP address
           port: 8888
